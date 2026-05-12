@@ -7,19 +7,29 @@ import bcrypt from "bcryptjs";
 
 async function createUser(formData: FormData) {
   "use server";
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") throw new Error("Non autorisé");
+
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const role = formData.get("role") as "TEACHER" | "STUDENT";
+  const role = formData.get("role") as string;
+
+  if (role !== "TEACHER" && role !== "STUDENT") throw new Error("Rôle invalide");
+  if (!name?.trim() || !email?.trim() || !password) throw new Error("Données manquantes");
 
   const hashed = await bcrypt.hash(password, 12);
-  await prisma.user.create({ data: { name, email, password: hashed, role } });
+  await prisma.user.create({ data: { name: name.trim(), email: email.trim(), password: hashed, role: role as "TEACHER" | "STUDENT" } });
   revalidatePath("/dashboard/admin/users");
 }
 
 async function deleteUser(formData: FormData) {
   "use server";
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") throw new Error("Non autorisé");
+
   const id = formData.get("id") as string;
+  if (!id) throw new Error("ID manquant");
   await prisma.user.delete({ where: { id } });
   revalidatePath("/dashboard/admin/users");
 }

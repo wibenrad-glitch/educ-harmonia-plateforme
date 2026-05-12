@@ -6,8 +6,16 @@ import { revalidatePath } from "next/cache";
 
 async function assignTeacher(formData: FormData) {
   "use server";
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") throw new Error("Non autorisé");
+
   const classId = formData.get("classId") as string;
   const teacherId = formData.get("teacherId") as string;
+  if (!classId || !teacherId) throw new Error("Données manquantes");
+
+  const teacher = await prisma.user.findUnique({ where: { id: teacherId } });
+  if (!teacher || teacher.role !== "TEACHER") throw new Error("Professeur invalide");
+
   await prisma.teacherClass.upsert({
     where: { teacherId_classId: { teacherId, classId } },
     update: {},
@@ -18,8 +26,16 @@ async function assignTeacher(formData: FormData) {
 
 async function enrollStudent(formData: FormData) {
   "use server";
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") throw new Error("Non autorisé");
+
   const classId = formData.get("classId") as string;
   const studentId = formData.get("studentId") as string;
+  if (!classId || !studentId) throw new Error("Données manquantes");
+
+  const student = await prisma.user.findUnique({ where: { id: studentId } });
+  if (!student || student.role !== "STUDENT") throw new Error("Élève invalide");
+
   await prisma.enrollment.upsert({
     where: { studentId_classId: { studentId, classId } },
     update: {},
@@ -30,8 +46,13 @@ async function enrollStudent(formData: FormData) {
 
 async function removeEnrollment(formData: FormData) {
   "use server";
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") throw new Error("Non autorisé");
+
   const studentId = formData.get("studentId") as string;
   const classId = formData.get("classId") as string;
+  if (!studentId || !classId) throw new Error("Données manquantes");
+
   await prisma.enrollment.delete({
     where: { studentId_classId: { studentId, classId } },
   });

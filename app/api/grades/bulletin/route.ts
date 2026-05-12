@@ -3,6 +3,15 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+function esc(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "STUDENT") {
@@ -80,9 +89,9 @@ export async function GET() {
       ? `<tr><td colspan="4" style="padding:10px 12px;color:#9ca3af;font-style:italic;font-size:13px">Aucun devoir corrigé</td></tr>`
       : course.graded.map((g) => `
         <tr style="border-bottom:1px solid #f3f4f6">
-          <td style="padding:10px 12px;font-size:13px;color:#374151">${g.title}</td>
-          <td style="padding:10px 12px;font-size:13px;color:#6b7280;font-style:italic">${g.feedback || "—"}</td>
-          <td style="padding:10px 12px;font-size:12px;color:#6b7280">${g.gradedAt}</td>
+          <td style="padding:10px 12px;font-size:13px;color:#374151">${esc(g.title)}</td>
+          <td style="padding:10px 12px;font-size:13px;color:#6b7280;font-style:italic">${esc(g.feedback || "—")}</td>
+          <td style="padding:10px 12px;font-size:12px;color:#6b7280">${esc(g.gradedAt)}</td>
           <td style="padding:10px 12px;text-align:center">
             <span style="font-weight:700;font-size:15px;color:${scoreColor(g.score)}">${g.score}/20</span>
           </td>
@@ -92,8 +101,8 @@ export async function GET() {
       <div style="margin-bottom:24px;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;page-break-inside:avoid">
         <div style="background:#f8fafc;padding:14px 18px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">
           <div>
-            <div style="font-weight:700;font-size:15px;color:#111827">${course.title}</div>
-            <div style="font-size:12px;color:#6b7280;margin-top:2px">Prof : ${course.teacherName}</div>
+            <div style="font-weight:700;font-size:15px;color:#111827">${esc(course.title)}</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:2px">Prof : ${esc(course.teacherName)}</div>
           </div>
           ${course.average ? `<div style="text-align:center;background:white;border:2px solid ${scoreColor(parseFloat(course.average))};border-radius:10px;padding:8px 16px">
             <div style="font-size:20px;font-weight:700;color:${scoreColor(parseFloat(course.average))}">${course.average}</div>
@@ -155,7 +164,7 @@ export async function GET() {
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
         <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em">Élève</div>
-        <div style="font-size:18px;font-weight:700;color:#111827;margin-top:2px">${session.user.name}</div>
+        <div style="font-size:18px;font-weight:700;color:#111827;margin-top:2px">${esc(session.user.name ?? "")}</div>
       </div>
       ${globalAverage ? `
       <div style="text-align:center;background:white;border:2px solid #4f46e5;border-radius:14px;padding:12px 24px">

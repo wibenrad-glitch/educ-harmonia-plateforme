@@ -4,7 +4,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 
-const ALLOWED_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+const ALLOWED_TYPES: Record<string, string> = {
+  "application/pdf": ".pdf",
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+};
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export async function POST(req: NextRequest) {
@@ -15,15 +20,18 @@ export async function POST(req: NextRequest) {
   const file = formData.get("file") as File | null;
 
   if (!file) return NextResponse.json({ error: "Aucun fichier" }, { status: 400 });
-  if (!ALLOWED_TYPES.includes(file.type)) {
+
+  const safeExt = ALLOWED_TYPES[file.type];
+  if (!safeExt) {
     return NextResponse.json({ error: "Type non autorisé (PDF, JPG, PNG uniquement)" }, { status: 400 });
   }
+
   if (file.size > MAX_SIZE) {
     return NextResponse.json({ error: "Fichier trop lourd (max 5 Mo)" }, { status: 400 });
   }
 
-  const ext = file.name.split(".").pop();
-  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  // Extension forcée depuis le MIME type serveur — jamais depuis file.name
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${safeExt}`;
   const uploadDir = path.join(process.cwd(), "public", "uploads");
 
   await mkdir(uploadDir, { recursive: true });

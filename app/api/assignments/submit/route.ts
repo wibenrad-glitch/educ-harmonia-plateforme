@@ -20,25 +20,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Contenu ou fichier requis" }, { status: 400 });
   }
 
+  // Vérifier que l'élève est bien inscrit dans la classe du cours de ce devoir
+  const assignment = await prisma.assignment.findUnique({
+    where: { id: assignmentId },
+    include: { course: { include: { class: { include: { enrollments: true } } } } },
+  });
+
+  if (!assignment) {
+    return NextResponse.json({ error: "Devoir introuvable" }, { status: 404 });
+  }
+
+  const isEnrolled = assignment.course.class.enrollments.some(
+    (e) => e.studentId === session.user.id
+  );
+  if (!isEnrolled) {
+    return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+  }
+
   const submission = await prisma.submission.upsert({
     where: { assignmentId_studentId: { assignmentId, studentId } },
     update: { content: content ?? null, fileUrl: fileUrl ?? null },
     create: { assignmentId, studentId, content: content ?? null, fileUrl: fileUrl ?? null },
   });
 
-  // Notifier le professeur du cours
-  const assignment = await prisma.assignment.findUnique({
-    where: { id: assignmentId },
-    include: { course: true },
-  });
-
-  if (assignment) {
-    await notify(
-      assignment.course.teacherId,
-      "Devoir rendu 📝",
-      `${session.user.name} a rendu "${assignment.title}" dans ${assignment.course.title}`
-    );
-  }
+  // Notifier le professeur du cours (assignment déjà chargé ci-dessus)
+  await notify(
+    assignment.course.teacherId,
+    "Devoir rendu 📝",
+    `${session.user.name} a rendu "${assignment.title}" dans ${assignment.course.title}`
+  );
 
   return NextResponse.json(submission);
 }
