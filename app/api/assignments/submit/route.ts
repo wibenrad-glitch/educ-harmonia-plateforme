@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
   }
 
   const isEnrolled = assignment.course.class.enrollments.some(
-    (e) => e.studentId === session.user.id
+    (e: { studentId: string }) => e.studentId === session.user.id
   );
   if (!isEnrolled) {
     return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
