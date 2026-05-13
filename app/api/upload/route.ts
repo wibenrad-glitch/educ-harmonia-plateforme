@@ -1,8 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { put } from "@vercel/blob";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "application/pdf": ".pdf",
@@ -10,7 +9,7 @@ const ALLOWED_TYPES: Record<string, string> = {
   "image/png": ".png",
   "image/webp": ".webp",
 };
-const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_SIZE = 5 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -30,13 +29,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Fichier trop lourd (max 5 Mo)" }, { status: 400 });
   }
 
-  // Extension forcée depuis le MIME type serveur — jamais depuis file.name
-  const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}${safeExt}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads");
+  const filename = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}${safeExt}`;
+  const blob = await put(filename, file, { access: "public" });
 
-  await mkdir(uploadDir, { recursive: true });
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(uploadDir, filename), buffer);
-
-  return NextResponse.json({ url: `/uploads/${filename}` });
+  return NextResponse.json({ url: blob.url });
 }

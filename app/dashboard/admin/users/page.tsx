@@ -23,6 +23,21 @@ async function createUser(formData: FormData) {
   revalidatePath("/dashboard/admin/users");
 }
 
+async function resetPassword(formData: FormData) {
+  "use server";
+  const session = await getServerSession(authOptions);
+  if (!session || session.user.role !== "ADMIN") throw new Error("Non autorisé");
+
+  const id = formData.get("id") as string;
+  const newPassword = formData.get("newPassword") as string;
+
+  if (!id || !newPassword || newPassword.length < 6) throw new Error("Mot de passe trop court (min 6 caractères)");
+
+  const hashed = await bcrypt.hash(newPassword, 12);
+  await prisma.user.update({ where: { id }, data: { password: hashed } });
+  revalidatePath("/dashboard/admin/users");
+}
+
 async function deleteUser(formData: FormData) {
   "use server";
   const session = await getServerSession(authOptions);
@@ -143,13 +158,30 @@ export default async function UsersPage() {
                         <p className="text-xs text-gray-400">
                           {new Date(user.createdAt).toLocaleDateString("fr-FR")}
                         </p>
-                        <form action={deleteUser} className="mt-1">
-                          <input type="hidden" name="id" value={user.id} />
-                          <button type="submit"
-                            className="text-red-400 hover:text-red-600 text-xs font-semibold transition">
-                            Supprimer
-                          </button>
-                        </form>
+                        <div className="flex gap-3 justify-end mt-1">
+                          <details>
+                            <summary className="text-xs text-blue-400 hover:text-blue-600 cursor-pointer font-semibold list-none">
+                              🔑 Réinitialiser
+                            </summary>
+                            <form action={resetPassword} className="mt-2 flex gap-1.5 items-center">
+                              <input type="hidden" name="id" value={user.id} />
+                              <input name="newPassword" type="password" required minLength={6}
+                                placeholder="Nouveau mdp"
+                                className="border border-gray-200 rounded-lg px-2 py-1 text-xs bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-400 w-32" />
+                              <button type="submit"
+                                className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700 transition">
+                                OK
+                              </button>
+                            </form>
+                          </details>
+                          <form action={deleteUser}>
+                            <input type="hidden" name="id" value={user.id} />
+                            <button type="submit"
+                              className="text-red-400 hover:text-red-600 text-xs font-semibold transition">
+                              Supprimer
+                            </button>
+                          </form>
+                        </div>
                       </div>
                     </div>
                   );
@@ -196,13 +228,30 @@ export default async function UsersPage() {
                         <p className="text-xs text-gray-400">
                           {new Date(user.createdAt).toLocaleDateString("fr-FR")}
                         </p>
-                        <form action={deleteUser} className="mt-1">
-                          <input type="hidden" name="id" value={user.id} />
-                          <button type="submit"
-                            className="text-red-400 hover:text-red-600 text-xs font-semibold transition">
-                            Supprimer
-                          </button>
-                        </form>
+                        <div className="flex gap-3 justify-end mt-1">
+                          <details>
+                            <summary className="text-xs text-blue-400 hover:text-blue-600 cursor-pointer font-semibold list-none">
+                              🔑 Réinitialiser
+                            </summary>
+                            <form action={resetPassword} className="mt-2 flex gap-1.5 items-center">
+                              <input type="hidden" name="id" value={user.id} />
+                              <input name="newPassword" type="password" required minLength={6}
+                                placeholder="Nouveau mdp"
+                                className="border border-gray-200 rounded-lg px-2 py-1 text-xs bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-400 w-32" />
+                              <button type="submit"
+                                className="text-xs bg-blue-600 text-white px-2.5 py-1 rounded-lg hover:bg-blue-700 transition">
+                                OK
+                              </button>
+                            </form>
+                          </details>
+                          <form action={deleteUser}>
+                            <input type="hidden" name="id" value={user.id} />
+                            <button type="submit"
+                              className="text-red-400 hover:text-red-600 text-xs font-semibold transition">
+                              Supprimer
+                            </button>
+                          </form>
+                        </div>
                       </div>
                     </div>
                   );
