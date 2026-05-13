@@ -13,7 +13,7 @@ export default async function AdminDashboard() {
     prisma.class.count(),
     prisma.course.count(),
     prisma.submission.count(),
-    prisma.submission.count({ where: { grade: null } }),
+    prisma.submission.count({ where: { grade: { is: null } } }),
   ]);
 
   const recentUsers = await prisma.user.findMany({
