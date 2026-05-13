@@ -28,11 +28,13 @@ export default function MessageUI({
   rooms: RoomSummary[];
 }) {
   const [rooms, setRooms] = useState(initialRooms);
-  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(initialRooms[0]?.id ?? null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [sending, setSending] = useState(false);
-  const [activeContact, setActiveContact] = useState<Contact | null>(null);
+  const [activeContact, setActiveContact] = useState<Contact | null>(
+    initialRooms[0] ? (contacts.find((c) => c.id === initialRooms[0].otherUser?.id) ?? null) : null
+  );
   const bottomRef = useRef<HTMLDivElement>(null);
 
   async function loadMessages(roomId: string) {
