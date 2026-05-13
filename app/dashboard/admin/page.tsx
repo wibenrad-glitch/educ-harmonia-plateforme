@@ -7,14 +7,15 @@ export default async function AdminDashboard() {
   const session = await getServerSession(authOptions);
   if (!session || session.user.role !== "ADMIN") redirect("/login");
 
-  const [teachers, students, classes, courses, submissions] = await Promise.all([
+  const [teachers, students, classes, courses, submissions, grades] = await Promise.all([
     prisma.user.count({ where: { role: "TEACHER" } }),
     prisma.user.count({ where: { role: "STUDENT" } }),
     prisma.class.count(),
     prisma.course.count(),
     prisma.submission.count(),
+    prisma.grade.count(),
   ]);
-  const ungradedSubmissions = 0;
+  const ungradedSubmissions = submissions - grades;
 
   const recentUsers = await prisma.user.findMany({
     where: { role: { in: ["TEACHER", "STUDENT"] } },
